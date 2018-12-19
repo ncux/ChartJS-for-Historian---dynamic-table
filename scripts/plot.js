@@ -1,5 +1,4 @@
 
-
 let API = {
     access_token: "eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiJhMmUyNjM5Zi1lY2ZhLTQyZGYtYTEwMi1mODM5NWY0ZTkwODEiLCJzdWIiOiJhZG1pbiIsImF1dGhvcml0aWVzIjpbImNsaWVudHMucmVhZCIsImhpc3Rvcmlhbl9yZXN0X2FwaS5yZWFkIiwicGFzc3dvcmQud3JpdGUiLCJjbGllbnRzLnNlY3JldCIsImhpc3Rvcmlhbl9yZXN0X2FwaS5hZG1pbiIsImhpc3Rvcmlhbl9yZXN0X2FwaS53cml0ZSIsImNsaWVudC5hZG1pbiIsImNsaWVudHMud3JpdGUiLCJ1YWEuYWRtaW4iLCJzY2ltLndyaXRlIiwic2NpbS5yZWFkIl0sInNjb3BlIjpbImNsaWVudHMucmVhZCIsImhpc3Rvcmlhbl9yZXN0X2FwaS5yZWFkIiwicGFzc3dvcmQud3JpdGUiLCJjbGllbnRzLnNlY3JldCIsImhpc3Rvcmlhbl9yZXN0X2FwaS5hZG1pbiIsImhpc3Rvcmlhbl9yZXN0X2FwaS53cml0ZSIsImNsaWVudC5hZG1pbiIsImNsaWVudHMud3JpdGUiLCJ1YWEuYWRtaW4iLCJzY2ltLndyaXRlIiwic2NpbS5yZWFkIl0sImNsaWVudF9pZCI6ImFkbWluIiwiY2lkIjoiYWRtaW4iLCJhenAiOiJhZG1pbiIsImdyYW50X3R5cGUiOiJjbGllbnRfY3JlZGVudGlhbHMiLCJyZXZfc2lnIjoiNGJlMWJiYzAiLCJpYXQiOjE1NDUxNzc0ODgsImV4cCI6MTU0NTIyMDY4OCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3VhYS9vYXV0aC90b2tlbiIsInppZCI6InVhYSIsImF1ZCI6WyJhZG1pbiIsImNsaWVudHMiLCJoaXN0b3JpYW5fcmVzdF9hcGkiLCJwYXNzd29yZCIsImNsaWVudCIsInVhYSIsInNjaW0iXX0.c6sWJqauJ-Qc73ERYKwXcYeuqtjwOjfcx9UIkSNnPATdYd1L95IDDhAJ6R3k0MXMn7JbHmFw2e6FEsXk45EEKWBQkH8K1hDBE4zP0NN2OmkR_ZepphDE8rN5osYKMKMuTm4rQnfyruVHlVu5pzJ-z7hMeKpVGGEpwfM8s_fY41TCcwxNdNyPDeb98nooHadBDt-98lmba8ThJIu-RMI4cGlMFqnIAo-UMhEpory-Fkjm0mqGlFNurZPaQJ22M0RoCC50D4jX7aTZ1yUEXT6mRbUQgNsRKkL1cCA4QG1RThgjF--GshyJFwug3OqJn5Def6Zl5jgxyabEy0XKKJFjPA",
     tagsUrl: 'https://dev.sealu.net:4433/api/v1/forward?url=/historian-rest-api/v1/tagslist',
@@ -16,9 +15,12 @@ const startTime = document.querySelector('#startTime');
 const endTime = document.querySelector('#endTime');
 const count = document.querySelector('#count');
 const interval = document.querySelector('#interval');
+const plotType = document.querySelector('#plotType');
 const plotButton = document.querySelector('#plotButton');
 const warning = document.querySelector('#warning');
 
+const table = document.querySelector('#table');
+const tableCaption = document.querySelector('#tableCaption');
 
 
 const ctx = document.querySelector('#chart').getContext('2d');
@@ -26,14 +28,13 @@ const ctx = document.querySelector('#chart').getContext('2d');
 // holds the tags
 let tagsArray = [];
 
+
+// for the chart
 let valuesArray = [];
 let timeArray = [];
 
-let chartType = {
-    bar: 'bar',
-    line: 'line'
-};
 
+// chart parameters
 let data = {
     labels: timeArray,
     datasets: [{
@@ -59,6 +60,8 @@ let data = {
     }]
 };
 
+
+// chart options
 let options = {
     scales: {
         yAxes: [{
@@ -68,7 +71,6 @@ let options = {
         }]
     }
 };
-
 
 
 // gets tags
@@ -91,7 +93,6 @@ async function getTags() {
                     let allTags = tag.Tagname;
                     // console.log(allTags);
                     tagsArray.push(allTags);
-                    // console.log(tagsArray);
                     populateTagsInput();
                 });
             }
@@ -117,7 +118,6 @@ function populateTagsInput() {
 
 
 plotButton.addEventListener('click', checkIfFormIsFullyFilled);
-// plotButton.addEventListener('click', getValuesAndPlotChart);
 
 
 function checkIfFormIsFullyFilled(e) {
@@ -129,44 +129,40 @@ function checkIfFormIsFullyFilled(e) {
     if (emptyFields) {
         warning.style.display = 'block';
     } else {
-        getValuesAndPlotChart();
+        getValuesAndPlotChartAndTabulateData();
     }
 }
 
 
-function getValuesAndPlotChart() {
+async function getValuesAndPlotChartAndTabulateData() {
 
     let queryUrl = generateQueryUrl();
     console.log(queryUrl);
 
-    try {
+    const options = { headers: { 'Authorization': `Bearer ${ API.access_token }` } };
+    // let response = await fetch(queryUrl, options);
 
-        let xhr = new XMLHttpRequest();
-        // xhr.open('GET', queryUrl, true);
-        // xhr.setRequestHeader('Authorization', 'Bearer ' + API.access_token);
+    let response = await fetch(`./data/WIN-9DBOGP80695.Simulation00052 - OG.json`);
+    let historianData = await response.json();
 
-        xhr.open('GET', `./data/WIN-9DBOGP80695.Simulation00052 - OG.json`, true);
+    let timeStampsAndValues = historianData.Data[0].Samples;
+    console.log(timeStampsAndValues);
 
-        xhr.onload = async () => {
-            if(xhr.status === 200) {
-                // console.log(xhr.responseText);
-                let historianData = await JSON.parse(xhr.responseText);
-                let timeStampsAndValues = historianData.Data[0].Samples;
-                console.log(timeStampsAndValues);
-                timeStampsAndValues.forEach(value => {
-                    timeArray.push(simplifyTime(value.TimeStamp));
-                    // valuesArray.push(Math.ceil(value.Value));
-                    valuesArray.push((parseInt(value.Value)).toFixed(0));
-                    plotChart();
-                })
-            }
-        };
+    // fill the chart arrays & plot the chart
+    timeStampsAndValues.forEach(value => {
+        timeArray.push(simplifyTime(value.TimeStamp));
+        // valuesArray.push(Math.ceil(value.Value));
+        valuesArray.push((parseInt(value.Value)).toFixed(0));
+        plotChart();
+    });
 
-        xhr.send();
-
-    } catch (e) {
-        console.log(e);
-    }
+    // tabulate the data
+    tableCaption.textContent = `Data from tag ${tagSelector.value}`;
+    timeStampsAndValues.forEach(dataItem => {
+        let row = document.createElement('tr');
+        row.innerHTML = `<td>${simplifyTime(dataItem.TimeStamp)}</td> <td>${(parseInt(dataItem.Value)).toFixed(0)}</td> <td>${dataItem.Quality}</td>`;
+        table.append(row);
+    });
 
 }
 
@@ -187,11 +183,16 @@ function simplifyTime(timestamp) {
 
 function plotChart() {
     const chart = new Chart(ctx, {
-        type: chartType.bar,
+        type: plotType.value,
         data: data,
         options: options
     });
 }
+
+
+
+
+
 
 
 

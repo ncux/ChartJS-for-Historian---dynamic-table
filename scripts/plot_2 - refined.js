@@ -22,23 +22,19 @@ const warning = document.querySelector('#warning');
 const table = document.querySelector('#table');
 const tableCaption = document.querySelector('#tableCaption');
 
-
+// grabs the canvas
 const ctx = document.querySelector('#chart').getContext('2d');
 
-// holds the tags
+// holds the API tags
 let tagsArray = [];
 
-// for the chart
+
+// these two arrays hold the chart values to be plotted
 let valuesArray = [];
 let timeArray = [];
 
-// for the table
-let timeData = [];
-let valuesData = [];
-let qualityData = [];
-let tableArray = [];
 
-
+// chart parameters
 let data = {
     labels: timeArray,
     datasets: [{
@@ -64,6 +60,8 @@ let data = {
     }]
 };
 
+
+// chart options
 let options = {
     scales: {
         yAxes: [{
@@ -75,37 +73,23 @@ let options = {
 };
 
 
-
 // gets tags
 async function getTags() {
-    try {
 
-        let xhr = new XMLHttpRequest();
-        // xhr.open('GET', API.tagsUrl, true);
-        // xhr.setRequestHeader('Authorization', 'Bearer ' + API.access_token);
+    const options = { headers: { 'Authorization': `Bearer ${ API.access_token }` } };
+    // let response = await fetch(tagsUrl, options);
 
-        xhr.open('GET', `./data/tags - verbose.json`, true);
+    let response = await fetch(`./data/tags - verbose.json`);
 
-        xhr.onload = async () => {
-            if(xhr.status === 200) {
-                // console.log(xhr.responseText);
-                let response = await JSON.parse(xhr.responseText);
-                let tags = response.Tags;
-                // console.log(tags);
-                tags.map(tag => {
-                    let allTags = tag.Tagname;
-                    // console.log(allTags);
-                    tagsArray.push(allTags);
-                    populateTagsInput();
-                });
-            }
-        };
-
-        xhr.send();
-
-    } catch (e) {
-        console.log(e);
-    }
+    let data = await response.json();
+    let tags = data.Tags;
+    // console.log(tags);
+    tags.map(tag => {
+        let allTags = tag.Tagname;
+        // console.log(allTags);
+        tagsArray.push(allTags);
+        populateTagsInput();
+    });
 }
 
 
@@ -121,7 +105,6 @@ function populateTagsInput() {
 
 
 plotButton.addEventListener('click', checkIfFormIsFullyFilled);
-// plotButton.addEventListener('click', getValuesAndPlotChart);
 
 
 function checkIfFormIsFullyFilled(e) {
@@ -129,60 +112,44 @@ function checkIfFormIsFullyFilled(e) {
     console.log('button clicked');
 
     let formInputs = form.elements;
-    let emptyFields = [...formInputs].some(input => input.value === '');
+    let emptyFields = [...formInputs].some(input => input.value === '');  // boolean
     if (emptyFields) {
         warning.style.display = 'block';
     } else {
-        getValuesAndPlotChart();
+        getValuesThenPlotChartAndTabulateData();
     }
 }
 
 
-function getValuesAndPlotChart() {
+async function getValuesThenPlotChartAndTabulateData() {
 
     let queryUrl = generateQueryUrl();
     console.log(queryUrl);
 
-    try {
+    const options = { headers: { 'Authorization': `Bearer ${ API.access_token }` } };
+    // let response = await fetch(queryUrl, options);
 
-        let xhr = new XMLHttpRequest();
-        // xhr.open('GET', queryUrl, true);
-        // xhr.setRequestHeader('Authorization', 'Bearer ' + API.access_token);
+    let response = await fetch(`./data/WIN-9DBOGP80695.Simulation00052 - OG.json`);
 
-        xhr.open('GET', `./data/WIN-9DBOGP80695.Simulation00052 - OG.json`, true);
+    let historianData = await response.json();
 
-        xhr.onload = async () => {
-            if(xhr.status === 200) {
-                // console.log(xhr.responseText);
-                let historianData = await JSON.parse(xhr.responseText);
-                let timeStampsAndValues = historianData.Data[0].Samples;
-                // console.log(timeStampsAndValues);
+    let timeStampsAndValues = historianData.Data[0].Samples;
+    console.log(timeStampsAndValues);
 
-                // fill the chart arrays
-                timeStampsAndValues.forEach(value => {
-                    timeArray.push(simplifyTime(value.TimeStamp));
-                    // valuesArray.push(Math.ceil(value.Value));
-                    valuesArray.push((parseInt(value.Value)).toFixed(0));
-                    plotChart();
-                });
+    // fill the chart arrays & plot the chart
+    timeStampsAndValues.forEach(value => {
+        timeArray.push(simplifyTime(value.TimeStamp));
+        valuesArray.push((parseInt(value.Value)).toFixed(0));   // removing decimal fraction
+        plotChart();
+    });
 
-                // fill the table arrays
-                timeStampsAndValues.forEach(value => {
-                    timeData.push(simplifyTime(value.TimeStamp));
-                    valuesData.push((parseInt(value.Value)).toFixed(0));
-                    qualityData.push(value.Quality);
-                    // tableArray.push(timeData, valuesData, qualityData);
-                    console.log(tableArray);
-                    tabulateData();
-                });
-            }
-        };
-
-        xhr.send();
-
-    } catch (e) {
-        console.log(e);
-    }
+    // tabulate the data
+    tableCaption.textContent = `Data from tag ${tagSelector.value}`;
+    timeStampsAndValues.forEach(dataItem => {
+        let row = document.createElement('tr');
+        row.innerHTML = `<td>${simplifyTime(dataItem.TimeStamp)}</td> <td>${(parseInt(dataItem.Value)).toFixed(0)}</td> <td>${dataItem.Quality}</td>`;
+        table.append(row);
+    });
 
 }
 
@@ -210,13 +177,9 @@ function plotChart() {
 }
 
 
-function tabulateData() {
-    tableCaption.textContent = `Data from tag ${tagSelector.value}`;
 
-    let row = document.createElement('tr');
-    row.textContent = `<td></td> <td></td> <td></td>`;
-    table.appendChild(row);
-}
+
+
 
 
 
