@@ -127,7 +127,7 @@ async function getValuesThenPlotChartAndTabulateData() {
     let response = await fetch(queryUrl, options);
 
     let historianData = await response.json();
-    let timeStampsAndValues = historianData.Data[0].Samples;
+    let timeStampsAndValues = historianData['Data'][0].Samples;
     console.log(timeStampsAndValues);
 
     // fill the chart arrays & plot the chart
