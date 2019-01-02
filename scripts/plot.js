@@ -128,9 +128,15 @@ function checkIfFormIsFullyFilled(e) {
     let emptyFields = [...formInputs].some(input => input.value === '');
     if (emptyFields) {
         warning.style.display = 'block';
+        setTimeout(hideWarningMessage, 2000);
     } else {
         getValuesAndPlotChartAndTabulateData();
     }
+}
+
+
+function hideWarningMessage() {
+    warning.style.display = 'none';
 }
 
 
